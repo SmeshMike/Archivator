@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -54,6 +55,12 @@ namespace WinApp
             this.progressBar1.Value = 100;
             MessageBox.Show(this, "Done", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
+            if (!isArch)
+            {
+                var res = MessageBox.Show(this, "Show log?", "Info", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (res == DialogResult.Yes)
+                    Process.Start(Path.Combine(arch.appDataPath, "last.log"));
+            }
 
             GoStart();
         }

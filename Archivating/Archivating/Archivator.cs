@@ -33,7 +33,7 @@ namespace Archivating
         string file;
         int fileSize;
 
-        private string appDataPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SuperArchivator");
+        public string appDataPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SuperArchivator");
 
         byte[] memFile;
         byte[] finalFile;
@@ -95,6 +95,7 @@ namespace Archivating
                 final.CopyTo(finalFile,0);
                 fileSize = offset;
 
+                LogDictionary(dictionary);
                 SaveDictionary(new InfoBox() { Keys = dictionary.Keys.ToArray(), Snippets = dictionary.Values.ToArray(), size = fileSize });
             });
         }
@@ -114,15 +115,30 @@ namespace Archivating
                     token.Length++;
                     token.Set(token.Length - 1, storage.Get(i));
 
-                    if(dictionary.Keys.Contains(token))
+                    BitArray key;
+                    if ((key = dictionary.Keys.Where(o => BitArrayEquals(o,token)).FirstOrDefault()) != null)
                     {
-                        list.Add(dictionary[token]);
+                        list.Add(dictionary[key]);
                         token.Length = 0;
                     }
+
+                    LoadChanged?.Invoke((double)i / (double)(fileSize));
                 }
 
                 finalFile = list.ToArray();                
             });
+        }
+
+        public bool BitArrayEquals(BitArray a, BitArray b)
+        {
+            if (a.Length != b.Length)
+                return false;
+
+            for (int i = 0; i < a.Length; i++)
+                if (a.Get(i) != b.Get(i))
+                    return false;
+
+            return true;
         }
 
         public async Task SaveFile()
@@ -147,6 +163,25 @@ namespace Archivating
                 }
             });
 
+        }
+
+        private async void LogDictionary(Dictionary<byte,BitArray> dic)
+        {
+            await Task.Run(() =>
+            {
+                using (StreamWriter sr = new StreamWriter(Path.Combine(appDataPath, "last.log")))
+                {
+                    sr.WriteLine("Size: " + (double)finalFile.Length/(double)memFile.Length);
+                    foreach (var el in dic)
+                    {
+                        string res = "";
+                        for (int i = 0; i < el.Value.Length; i++)
+                            res += Convert.ToInt32(el.Value.Get(i)) + "";
+
+                        sr.WriteLine(el.Key + "\t\t:" + res);
+                    }
+                }
+            });
         }
 
         private async void SaveDictionary(InfoBox b)
