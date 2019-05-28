@@ -8,15 +8,12 @@ namespace Archivating
 {
     public class Program
     {
-        [STAThread]
         public static void Main(string[] args)
         {
-            StringAnalizis sa = new StringAnalizis("aaaddbbc");
+            StringAnalizis sa = new StringAnalizis();
             sa.CountLetters();
-            foreach (var a in sa.SortedLetterCount)
-                Console.WriteLine(a);
-
-
+            foreach (var a in sa.Encrypt())
+                Console.WriteLine(a.Key + "  " + a.Value);
 
             Console.ReadLine();
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,16 +11,16 @@ namespace Archivating
     {
         class Node
         {
-            public string Value { get; set; }
+            public byte? Value { get; set; }
             public int Weight { get; set; }
             public Node Left = null;
             public Node Right = null;
         }
 
-        Dictionary<char, int> letterCount;
-        public Dictionary<char, int> LetterCount => letterCount != null ? letterCount : new Dictionary<char, int>();
+        Dictionary<byte, int> letterCount;
+        public Dictionary<byte, int> LetterCount => letterCount != null ? letterCount : new Dictionary<byte, int>();
 
-        public List<KeyValuePair<char, int>> SortedLetterCount
+        public List<KeyValuePair<byte, int>> SortedLetterCount
         {
             get
             {
@@ -28,7 +29,7 @@ namespace Archivating
             }
         }
 
-        private List<KeyValuePair<char, int>> SortList(List<KeyValuePair<char, int>> list)
+        private List<KeyValuePair<byte, int>> SortList(List<KeyValuePair<byte, int>> list)
         {
             list.Sort((p1, p2) => p2.Value.CompareTo(p1.Value));
             return list;
@@ -40,13 +41,17 @@ namespace Archivating
             return list;
         }
 
-        string str;
-        public string InnerString => str;
+        byte[] str;
+        public byte[] InnerString
+        {
+            get => str;
+            set => str = value;
+        }
 
-        public StringAnalizis() { letterCount = new Dictionary<char, int>(); }
-        public StringAnalizis(string s) { str = s; letterCount = new Dictionary<char, int>(); }
+        public StringAnalizis() { letterCount = new Dictionary<byte, int>(); }
+        public StringAnalizis(byte[] s) { str = s; letterCount = new Dictionary<byte, int>(); }
 
-        public Dictionary<char, int> CountLetters()
+        public Dictionary<byte, int> CountLetters()
         {
             foreach(var c in str)
             {
@@ -65,13 +70,14 @@ namespace Archivating
                 .Select(e => new Node()
                 {
                     Weight = e.Value,
-                    Value = e.Key.ToString()
+                    Value = e.Key
 
                 })).ToList();
 
             while(nodeList.Count > 1)
             {
                 Node n = new Node();
+                n.Weight = nodeList[nodeList.Count - 1].Weight + nodeList[nodeList.Count - 2].Weight;
                 n.Right = nodeList[nodeList.Count - 1];
                 n.Left = nodeList[nodeList.Count - 2];
 
@@ -82,6 +88,40 @@ namespace Archivating
             }
 
             return nodeList[0];
+        }
+
+        private void MakeWord(Node n, BitArray word, ref Dictionary<byte,BitArray> dic)
+        {
+            if (n.Value != null)
+            {
+                if (word.Length == 0)
+                    dic.Add(n.Value.Value, new BitArray(1, true));
+                else
+                    dic.Add(n.Value.Value, word);
+                return;
+            }
+
+            var arrayLeft = new BitArray(word.Length + 1);
+            var arrayRight = new BitArray(word.Length + 1);
+            for (int i = 0; i < word.Length; i++)
+            {
+                arrayLeft.Set(i, word.Get(i));
+                arrayRight.Set(i, word.Get(i));
+            }
+            arrayLeft.Set(arrayLeft.Length - 1, true);
+            MakeWord(n.Left, arrayLeft, ref dic);
+            arrayRight.Set(arrayRight.Length - 1, false);
+            MakeWord(n.Right, arrayRight, ref dic);
+
+        }
+
+        public Dictionary<byte, BitArray> Encrypt()
+        {
+            var root = BuildTree();
+            Dictionary<byte, BitArray> dic = new Dictionary<byte, BitArray>();
+            MakeWord(root, new BitArray(0), ref dic);
+
+            return dic;
         }
     }
 }
